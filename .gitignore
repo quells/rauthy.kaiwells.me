@@ -1,0 +1,4 @@
+# Secrets and credentials never live in this repo
+*.env
+.env*
+__pycache__/

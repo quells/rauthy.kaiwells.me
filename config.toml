@@ -1,0 +1,47 @@
+# Rauthy config.toml — non-secret values only.
+# Secrets are injected as env vars via `fly secrets set` (env always overrides this file):
+#   HQL_SECRET_RAFT, HQL_SECRET_API, ENC_KEYS, ENC_KEY_ACTIVE, SMTP_PASSWORD
+# Kept out of the repo so the admin login isn't public, also set as Fly secrets:
+#   BOOTSTRAP_ADMIN_EMAIL ([bootstrap] admin_email), EVENT_EMAIL ([events] email)
+#
+# NOTE: since v0.36 Rauthy panics on unknown keys. Validate before deploying:
+#   docker run --rm -v "$PWD/config.toml:/app/config.toml" \
+#     ghcr.io/sebadob/rauthy:0.37.2 validate-config -p config.toml
+
+# [bootstrap] admin_email is set via the BOOTSTRAP_ADMIN_EMAIL secret.
+
+[cluster]
+# Single-node Hiqlite "cluster". Raft/API ports stay internal (not in fly.toml services).
+node_id = 1
+nodes = ["1 localhost:8100 localhost:8200"]
+# Single instance: favor durability over throughput.
+log_sync = "immediate"
+# Small-instance tuning (saves a little memory).
+# Don't shrink wal_size: a single log entry (e.g. the fido_mds migration,
+# ~516KB) must fit in one WAL file or Hiqlite panics on first boot.
+logs_until_snapshot = 1000
+read_pool_size = 2
+
+# [email]
+# smtp_url = "smtp.example.com"
+# smtp_username = "rauthy@example.com"
+# smtp_from = "Rauthy <rauthy@example.com>"
+
+# [events] email is set via the EVENT_EMAIL secret.
+
+[server]
+scheme = "http"                 # TLS is terminated by Fly's proxy
+pub_url = "rauthy.kaiwells.me"  # your custom domain, no scheme
+proxy_mode = true
+# Fly proxy source ranges. Requests from anything else get blocked,
+# so if every request 403s after deploy, check `fly logs` for the real
+# peer IP and adjust/tighten this list.
+trusted_proxies = ["172.16.0.0/12", "fdaa::/16"]
+http_workers = 1
+metrics_enable = false
+swagger_ui_enable = false
+
+[webauthn]
+# CAUTION: changing rp_id later breaks every registered passkey.
+rp_id = "rauthy.kaiwells.me"
+rp_origin = "https://rauthy.kaiwells.me:443"   # must include the port
