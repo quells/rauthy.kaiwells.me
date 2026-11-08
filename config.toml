@@ -45,3 +45,6 @@ swagger_ui_enable = false
 # CAUTION: changing rp_id later breaks every registered passkey.
 rp_id = "rauthy.kaiwells.me"
 rp_origin = "https://rauthy.kaiwells.me:443"   # must include the port
+
+[access]
+client_credentials_map_sub = true
